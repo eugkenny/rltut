@@ -13,7 +13,6 @@ public class WorldBuilder {
     private int nextRegion;
 
     public WorldBuilder(int width, int height, int depth) {
-        System.out.println("World Builder: " + width + ", " + height + ", " + depth);
         this.width = width;
         this.height = height;
         this.depth = depth;
@@ -176,10 +175,25 @@ public class WorldBuilder {
         return candidates;
     }
 
+    private WorldBuilder addExitStairs() {
+        int x = -1;
+        int y = -1;
+
+        do {
+            x = (int)(Math.random() * width);
+            y = (int)(Math.random() * height);
+        }
+        while (tiles[x][y][0] != Tile.FLOOR);
+
+        tiles[x][y][0] = Tile.STAIRS_UP;
+        return this;
+    }
+
     public WorldBuilder makeCaves() {
         return randomizeTiles()
                 .smooth(8)
                 .createRegions()
-                .connectRegions();
+                .connectRegions()
+                .addExitStairs();
     }
 }

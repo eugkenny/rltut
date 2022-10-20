@@ -5,6 +5,7 @@ import java.util.List;
 
 public class World {
     private Tile[][][] tiles;
+    private Item[][][] items;
     private List<Creature> creatures;
 
     private int width;
@@ -21,6 +22,7 @@ public class World {
         this.width = tiles.length;
         this.height = tiles[0].length;
         this.depth = tiles[0][0].length;
+        this.items = new Item[width][height][depth];
         this.creatures = new ArrayList<Creature>();
     }
 
@@ -39,14 +41,32 @@ public class World {
         return null;
     }
 
+    public Item item(int x, int y, int z){
+        return items[x][y][z];
+    }
+
     public char glyph(int x, int y, int z){
+        Creature creature = creature(x, y, z);
+        if (creature != null)
+            return creature.glyph();
+
+        if (item(x,y,z) != null)
+            return item(x,y,z).glyph();
+
         return tile(x, y, z).glyph();
     }
 
-
     public Color color(int x, int y, int z){
+        Creature creature = creature(x, y, z);
+        if (creature != null)
+            return creature.color();
+
+        if (item(x,y,z) != null)
+            return item(x,y,z).color();
+
         return tile(x, y, z).color();
     }
+
 
     public void dig(int x, int y, int z) {
         if (tile(x, y, z).isDiggable())
@@ -80,29 +100,55 @@ public class World {
         creatures.add(creature);
     }
 
-    public void printWorld(){
-        System.out.println(width + ", " + height + ", " + depth);
+    public void addAtEmptyLocation(Item item, int depth) {
+        int x;
+        int y;
 
-        for(int i = 0; i < width; i++){
-            for(int j = 0; j < height; j++){
-                for(int k = 0; k < depth; k++){
-                    if(tiles[i][j][k] == Tile.FLOOR){
-                        System.out.print("F");
-                    } else if (tiles[i][j][k] == Tile.WALL) {
-                        System.out.print("W");
-                    } else if (tiles[i][j][k] == Tile.BOUNDS) {
-                        System.out.print("B");
-                    } else if (tiles[i][j][k] == Tile.STAIRS_DOWN) {
-                        System.out.print(">");
-                    }
-                    else if (tiles[i][j][k] == Tile.STAIRS_UP) {
-                        System.out.print("<");
-                    }
-                }
-                //System.out.println();
-            }
-            System.out.println();
-            System.out.println();
+        do {
+            x = (int)(Math.random() * width);
+            y = (int)(Math.random() * height);
         }
+        while (!tile(x,y,depth).isGround() || item(x,y,depth) != null);
+
+        items[x][y][depth] = item;
+    }
+
+    public boolean addAtEmptySpace(Item item, int x, int y, int z){
+        if (item == null)
+            return true;
+
+        List<Point> points = new ArrayList<Point>();
+        List<Point> checked = new ArrayList<Point>();
+
+        points.add(new Point(x, y, z));
+
+        while (!points.isEmpty()){
+            Point p = points.remove(0);
+
+            checked.add(p);
+
+            if (p.x < 0 || p.y < 0 || p.x >= width || p.y >= height)
+                continue;
+
+            if (!tiles[p.x][p.y][p.z].isGround())
+                continue;
+
+            if (items[p.x][p.y][p.z] == null){
+                items[p.x][p.y][p.z] = item;
+                Creature c = this.creature(p.x, p.y, p.z);
+                if (c != null)
+                    c.notify("A %s lands between your feet.", item.name());
+                return true;
+            } else {
+                List<Point> neighbors = p.neighbors8();
+                neighbors.removeAll(checked);
+                points.addAll(neighbors);
+            }
+        }
+        return false;
+    }
+
+    public void remove(int x, int y, int z) {
+        items[x][y][z] = null;
     }
 }

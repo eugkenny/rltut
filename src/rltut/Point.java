@@ -23,7 +23,10 @@ public class Point {
                 if (ox == 0 && oy == 0)
                     continue;
 
-                points.add(new Point(x+ox, y+oy, z));
+                int nx = x+ox;
+                int ny = y+oy;
+
+                points.add(new Point(nx, ny, z));
             }
         }
 
